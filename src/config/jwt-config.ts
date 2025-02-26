@@ -11,5 +11,5 @@ export const JWT_CONFIG = {
       );
       return 'fallback_secret';
     })(),
-  expiresIn: '1d',
+  expiresIn: '30d',
 };

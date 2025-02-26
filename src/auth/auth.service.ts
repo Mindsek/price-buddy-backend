@@ -1,8 +1,3 @@
-// import { Injectable } from '@nestjs/common';
-
-// @Injectable()
-// export class AuthService {}
-
 import {
   BadRequestException,
   Injectable,
@@ -11,11 +6,11 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { compare, hash } from 'bcrypt';
+import { compare, hash } from 'bcryptjs';
 import { JWT_CONFIG } from 'src/config/jwt-config';
 import { User } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
-import { CreateUserDto } from './dto/auth.dto';
+import { AuthCreateUserDto } from './dto/auth.dto';
 
 export class AuthResponse {
   access_token: string;
@@ -35,20 +30,35 @@ export class AuthService {
     private readonly usersService: UsersService,
   ) {}
 
-  async register(data: CreateUserDto): Promise<AuthResponse> {
+  async register(data: AuthCreateUserDto): Promise<AuthResponse> {
+    this.logger.log(
+      `Registering user: ${data.username} with email: ${data.email}`,
+    );
+
     const existingUserEmail = await this.usersService.findByEmail(data.email);
     const existingUserUsername = await this.usersService.findByUsername(
       data.username,
     );
-    if (existingUserEmail || existingUserUsername) {
-      throw new BadRequestException('User already exists');
+
+    if (existingUserEmail) {
+      throw new BadRequestException('Email already in use');
     }
+
+    if (existingUserUsername) {
+      throw new BadRequestException('Username already taken');
+    }
+
+    this.logger.log(
+      `User does not exist, creating user: ${data.username} with email: ${data.email}`,
+    );
+
     const hashedPassword = await hash(data.password, 10);
     const user = await this.usersService.create({
       email: data.email,
       username: data.username,
       password: hashedPassword,
     });
+
     return this.authenticateUser(user);
   }
 
@@ -56,11 +66,7 @@ export class AuthService {
     const { email, password } = authBody;
 
     const existingUser = await this.usersService.findByEmail(email);
-    this.logger.log(
-      `Checking user with email: ${email}, found: ${JSON.stringify(
-        existingUser,
-      )}`,
-    );
+
     if (!existingUser) {
       throw new NotFoundException('User or password incorrect');
     }
@@ -69,7 +75,7 @@ export class AuthService {
       password,
       existingUser.password,
     );
-    this.logger.log('isPasswordValid', isPasswordValid);
+
     if (!isPasswordValid) {
       throw new NotFoundException('User or password incorrect');
     }

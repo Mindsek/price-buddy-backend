@@ -14,39 +14,27 @@ export class UsersService {
     return users;
   }
 
-  async findByEmail(email: string): Promise<User> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user) throw new NotFoundException('User not found');
-    return user;
+  async findByEmail(email: string): Promise<User | null> {
+    return await this.prisma.user.findUnique({ where: { email } });
   }
 
-  async findByUsername(username: string): Promise<User> {
-    const user = await this.prisma.user.findUnique({ where: { username } });
-    if (!user) throw new NotFoundException('User not found');
-    return user;
+  async findByUsername(username: string): Promise<User | null> {
+    return await this.prisma.user.findUnique({ where: { username } });
   }
 
-  async findOne(id: string): Promise<User> {
-    const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw new NotFoundException('User not found');
-    return user;
+  async findOne(id: string): Promise<User | null> {
+    return await this.prisma.user.findUnique({ where: { id } });
   }
 
   async create(data: CreateUserDto): Promise<User> {
-    const user = await this.prisma.user.create({ data });
-    if (!user) throw new NotFoundException('User not created');
-    return user;
+    return await this.prisma.user.create({ data });
   }
 
   async update(id: string, data: UpdateUserDto): Promise<User> {
-    const user = await this.prisma.user.update({ where: { id }, data });
-    if (!user) throw new NotFoundException('User not updated');
-    return user;
+    return await this.prisma.user.update({ where: { id }, data });
   }
 
   async remove(id: string): Promise<User> {
-    const user = await this.prisma.user.delete({ where: { id } });
-    if (!user) throw new NotFoundException('User not deleted');
-    return user;
+    return await this.prisma.user.delete({ where: { id } });
   }
 }
