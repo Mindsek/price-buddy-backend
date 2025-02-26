@@ -4,15 +4,16 @@ import {
   Get,
   Logger,
   Post,
+  Req,
   Res,
-  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
 import { AuthBodyDto, AuthCreateUserDto, AuthResponse } from './dto/auth.dto';
+import { JwtPayload } from './types/jwt-payload.type';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -39,7 +40,7 @@ export class AuthController {
     try {
       const { access_token } = await this.authService.login(authBody);
 
-      res.cookie('auth-buddy', access_token, {
+      res.cookie('auth-session', access_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
@@ -63,7 +64,14 @@ export class AuthController {
     description: 'Registration successful, returns a JWT token',
     type: AuthResponse,
   })
-  @ApiResponse({ status: 400, description: 'User already exists' })
+  @ApiResponse({
+    status: 400,
+    description: 'Email already in use',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Username already taken',
+  })
   async register(@Body() body: AuthCreateUserDto, @Res() res: Response) {
     this.logger.log(
       `Registration attempt for email: ${body.email}, username: ${body.username} from IP: ${res.req.ip}`,
@@ -71,7 +79,7 @@ export class AuthController {
     try {
       const { access_token } = await this.authService.register(body);
 
-      res.cookie('auth-buddy', access_token, {
+      res.cookie('auth-session', access_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
@@ -106,29 +114,14 @@ export class AuthController {
     },
   })
   @ApiResponse({ status: 401, description: 'Invalid or missing token' })
-  async verify(@Res() res: Response) {
-    const token = res.req.cookies['auth-buddy'];
-    if (!token) {
-      throw new UnauthorizedException('No token provided');
-    }
+  verify(@Req() req: Request & { user: JwtPayload }, @Res() res: Response) {
+    const user = req.user;
 
-    try {
-      const payload = await this.authService.verifyToken(token);
-      this.logger.log(
-        `Verification successful for token: ${token}, payload: ${JSON.stringify(
-          payload,
-        )}`,
-      );
-      res.json({
-        id: payload.id,
-        email: payload.email,
-        username: payload.username,
-      });
-    } catch (error) {
-      this.logger.error(
-        `Verification failed for token: ${token} - Error: ${error.message}`,
-      );
-      throw new UnauthorizedException('Invalid token');
-    }
+    this.logger.log(`Verification successful for user: ${user.username}`);
+    res.json({
+      id: user.id,
+      email: user.email,
+      username: user.username,
+    });
   }
 }
