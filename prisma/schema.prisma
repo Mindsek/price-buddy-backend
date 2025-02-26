@@ -1,0 +1,80 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String    @id @default(uuid())
+  username  String    @unique
+  email     String    @unique
+  password  String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  categories Category[]
+  products   Product[]
+  shoppingLists ShoppingList[]
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+
+  products  Product[]
+}
+
+model Product {
+  id         String    @id @default(uuid())
+  name       String
+  categoryId String
+  category   Category  @relation(fields: [categoryId], references: [id])
+  prices     Price[]
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  shoppingListItems ShoppingListItem[]
+}
+
+model Supermarket {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  address     String?   // Optionnel
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  prices      Price[]
+}
+
+model Price {
+  id           String      @id @default(uuid())
+  supermarketId String
+  supermarket  Supermarket @relation(fields: [supermarketId], references: [id])
+  productId    String
+  product      Product     @relation(fields: [productId], references: [id])
+  price        Float
+  weight       Float       // Poids en kg ou unité
+  weightUnit   String      // Ex. 'kg', 'g', 'unit'
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model ShoppingList {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  items     ShoppingListItem[]
+}
+
+model ShoppingListItem {
+  id          String       @id @default(uuid())
+  productId   String
+  product     Product      @relation(fields: [productId], references: [id])
+  quantity    Int
+  shoppingListId String
+  shoppingList ShoppingList @relation(fields: [shoppingListId], references: [id])
+}
