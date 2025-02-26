@@ -1,2 +1,12 @@
 ### Get hello 
 GET http://localhost:3001
+
+### Register a new user
+POST http://localhost:3001/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@test.com",
+  "username": "test",
+  "password": "testtest"
+}
